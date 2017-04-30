@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>chenlixiyu</title>
+  
+  <link href="/atom.xml" rel="self"/>
+  
+  <link href="http://chenlixiyu.me/"/>
+  <updated>2017-04-16T11:38:47.725Z</updated>
+  <id>http://chenlixiyu.me/</id>
+  
+  <author>
+    <name>chenlixiyu</name>
+    
+  </author>
+  
+  <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>一些简单实用的MySQL纠错技巧</title>
+    <link href="http://chenlixiyu.me/2017/04/16/%E4%B8%80%E4%BA%9B%E7%AE%80%E5%8D%95%E5%AE%9E%E7%94%A8%E7%9A%84MySQL%E7%BA%A0%E9%94%99%E6%8A%80%E5%B7%A7/"/>
+    <id>http://chenlixiyu.me/2017/04/16/一些简单实用的MySQL纠错技巧/</id>
+    <published>2017-04-16T11:24:25.000Z</published>
+    <updated>2017-04-16T11:38:47.725Z</updated>
+    
+    <content type="html"><![CDATA[<p> 数据库作为后台开发的重要部分，开发后台必然无法避免地要去做一些MySQL语句优化或者纠错，这里有几条简单的纠错技巧可以参考。</p>
+<ul>
+<li>1 在使用编程语言提供的接口如jdbc进行sql查询时，难以避免地会出现语句拼接错误的情况，如果在编译时报错，可以将执行的语句打印出来，仔细检查<ul>
+<li>1.1 如果仔细检查还发现不了错误，可以在mysql命令行中纠错，输入如下命令<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">set global general_log=&apos;on&apos;</div><div class="line">set global log_output=&apos;table&apos;</div></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+</ul>
+<p>运行语句来查看日志，纠错完毕后记得关闭日志<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">set global general_log=&apos;false&apos;</div></pre></td></tr></table></figure></p>
+<p>否则一直输出日志会占用大量资源</p>
+<ul>
+<li><p>2 使用explain extended + 语句来显示运行的具体信息，注意关注受影响的行数，这是一个很重要的数据</p>
+</li>
+<li><p>3 使用show warnings 命令来显示warning以及mysql服务器优化后的sql语句</p>
+</li>
+<li><p>4 在多线程环境中可以使用show processlist命令来查看各个线程的运行情况</p>
+</li>
+</ul>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt; 数据库作为后台开发的重要部分，开发后台必然无法避免地要去做一些MySQL语句优化或者纠错，这里有几条简单的纠错技巧可以参考。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;1 在使用编程语言提供的接口如jdbc进行sql查询时，难以避免地会出现语句拼接错误的情况，如果在编译时报错，可以将执行
+    
+    </summary>
+    
+    
+      <category term="-MySQL" scheme="http://chenlixiyu.me/tags/MySQL/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>简单的IoC实现及设计模式分析</title>
+    <link href="http://chenlixiyu.me/2017/04/14/%E7%AE%80%E5%8D%95%E7%9A%84IoC%E5%8E%9F%E7%90%86%E5%8F%8A%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E5%88%86%E6%9E%90/"/>
+    <id>http://chenlixiyu.me/2017/04/14/简单的IoC原理及设计模式分析/</id>
+    <published>2017-04-14T11:59:12.000Z</published>
+    <updated>2017-04-16T11:08:29.550Z</updated>
+    
+    <content type="html"><![CDATA[<p>最近进行了大量的JAVA相关知识的学习，对于JAVA知识也算是比较了解了，IoC，反射，设计模式等知识都能讲清楚，但是感觉由于平时使用框架做Web后台开发的原因，明明每天都在接触这些东西，但是又没有真正在使用它们，只是使用了Spring等框架基于它们来实现的服务，纸上得来终觉浅，不练习不行。</p>
+<p>正好IoC容器的实现大量地使用了IoC,反射，设计模式，所以打算自己写一个简单的IoC容器来练习，网上查了一下，发现github上有一个叫 <a href="https://github.com/code4craft/tiny-spring" target="_blank" rel="external"><em>tiny-spring</em></a> 的开源项目，简化了Spring的IoC容器和AOP，API名字都是仿照Spring，所以临摹了一下IoC，后续打算临摹下它的AOP。</p>
+<p>我的项目地址为 <a href="https://github.com/chenlixiyuCBB/Myioc" target="_blank" rel="external"><em>Myioc</em></a>，目前只实现了IoC容器，后续将会有更新AOP实现</p>
+<h1 id="大体结构"><a href="#大体结构" class="headerlink" title="大体结构"></a>大体结构</h1><p>项目是以使用ApplicationContext作为入口，应用上下文封装了BeanFactory、BeanDefinitionReader。BeanDefinitionReader是获取并存储bean定义的类；BeanFactory则是IoC容器，负责bean的创建和获取，二者由应用上下文持有，然后组合使用以完成控制反转。</p>
+<h1 id="具体介绍"><a href="#具体介绍" class="headerlink" title="具体介绍"></a>具体介绍</h1><h2 id="IoC容器"><a href="#IoC容器" class="headerlink" title="IoC容器"></a>IoC容器</h2><h3 id="由xml中获取bean的定义"><a href="#由xml中获取bean的定义" class="headerlink" title="由xml中获取bean的定义"></a>由xml中获取bean的定义</h3><p><img src="https://cl.ly/302q111l0919" alt="获取bean定义类图"></p>
+<h4 id="Resource及ResourceLoader"><a href="#Resource及ResourceLoader" class="headerlink" title="Resource及ResourceLoader"></a>Resource及ResourceLoader</h4><p>Resource是一个接口，它的实现类必须实现getInputStream()方法，返回一个InputStream。<br>ResourceLoader则用于生成并返回一个Resource对象（这是面向对象设计中的单一职责原则，Resource负责加载URL，而ResourceLoder则负责生成URL）。在本项目中二者的实现类分别是XmlResource和XmlResourceLoader，用于读取classPath下的xml配置文件。</p>
+<h3 id="BeanDefinition"><a href="#BeanDefinition" class="headerlink" title="BeanDefinition"></a>BeanDefinition</h3><p>这是一个普通类，保存了Bean的定义，包括名字，类型名，Class，参数等</p>
+<h3 id="BeanDefinitionReader"><a href="#BeanDefinitionReader" class="headerlink" title="BeanDefinitionReader"></a>BeanDefinitionReader</h3><p>BeanDefinitionReader为核心的接口,AbstractBeanDefinitionReader继承自BeanDefinitionReader，定义了读取bean的定义的流程，这是设计模式中的模板模式，我们先用一个抽象类定义好一个流程，完成部分步骤，某些步骤则由客户来自行完成，这样做既能规范流程又能增加系统的可扩展性。在这里使用模板模式，后续如果想增加由注解来获取Bean的定义的功能，则只需要实现AbstractBeanDefinitionReader即可。我们目前只实现XML读取，则实现一个XmlBeanDedinitionReader。</p>
+<p>所以获取bean的定义就有以下流程：</p>
+<ul>
+<li>1 由ResourceLoder返回一个Resource，并通过Rsource获取Inputstream</li>
+<li>2 BeanDefinitionReader通过inputStream获取相应的bean定义并解析，保存。</li>
+</ul>
+<h3 id="装配bean"><a href="#装配bean" class="headerlink" title="装配bean"></a>装配bean</h3><p><img src="https://cl.ly/3p2N2b0z183f" alt="BeanFactory"></p>
+<p>BeanFactory为核心接口，定义了getBean()方法，通过bean的名字来获取bean（这是一个工厂方法，是工厂模式的一种实现方法，这里bean由BeanFactory生成，并交由工厂方法bean返回，将用户和具体的bean解耦，解耦正是控制反转的目标）。和BeanDefinitionReader类似，这里也有一个AbstractBeanFactory,它定义了装载bean的流程，将生成bean的关键部分交由实现类来完成。这里我们完成了一个AutowireCapableBeanFactory来实现bean的自动装载。</p>
+<h2 id="应用上下文"><a href="#应用上下文" class="headerlink" title="应用上下文"></a>应用上下文</h2><p><img src="https://cl.ly/0g3U3V1Q2K0M" alt="应用上下文"></p>
+<p>现在整个IoC容器几乎大功告成了，但是获取bean的定义和bean的装载并未连接在一起，所以需要一个上下文来完成这整一个流程，于是就有了ApplicationContext接口为核心的一系列类。</p>
+<p>ApplicationContext是一个继承BeanFactory的接口，这样做的目的是实现一个静态代理，然后ApplicationContext持有一个BeanFactory，用户获取bean时是从ApplicationContext来获取，这样就将用户和BeanFactory解耦了，用户不必持有一个BeanFactory对象，即可获取Bean的实现。</p>
+<p>至于以ApplicationContext的实现类，和之前的类一样，都是使用一个抽象实现类来定义模板，然后再子类实现具体功能。这里就不再过多赘述。</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>就算是IoC这么一个在JAVA开发中很常见的概念，要将其简单实现也是不容易的。想要提升自身JAVA编码能力，单纯去了解各种各样的特性是不够的。了解JVM，字节码不如动手写一个东西出来。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;最近进行了大量的JAVA相关知识的学习，对于JAVA知识也算是比较了解了，IoC，反射，设计模式等知识都能讲清楚，但是感觉由于平时使用框架做Web后台开发的原因，明明每天都在接触这些东西，但是又没有真正在使用它们，只是使用了Spring等框架基于它们来实现的服务，纸上得来终
+    
+    </summary>
+    
+    
+      <category term="JAVA" scheme="http://chenlixiyu.me/tags/JAVA/"/>
+    
+      <category term="Spring原理" scheme="http://chenlixiyu.me/tags/Spring%E5%8E%9F%E7%90%86/"/>
+    
+      <category term="设计模式" scheme="http://chenlixiyu.me/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"/>
+    
+      <category term="IoC" scheme="http://chenlixiyu.me/tags/IoC/"/>
+    
+      <category term="反射" scheme="http://chenlixiyu.me/tags/%E5%8F%8D%E5%B0%84/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>近期书单（持续更新）</title>
+    <link href="http://chenlixiyu.me/2017/04/13/%E8%BF%91%E6%9C%9F%E4%B9%A6%E5%8D%95%EF%BC%88%E6%8C%81%E7%BB%AD%E6%9B%B4%E6%96%B0%EF%BC%89/"/>
+    <id>http://chenlixiyu.me/2017/04/13/近期书单（持续更新）/</id>
+    <published>2017-04-13T13:09:45.000Z</published>
+    <updated>2017-04-13T13:34:43.548Z</updated>
+    
+    <content type="html"><![CDATA[<p>最近看了不少专业书籍，打算理一下</p>
+<h1 id="JAVA相关"><a href="#JAVA相关" class="headerlink" title="JAVA相关"></a>JAVA相关</h1><p><font size="4">《JAVA编程思想》</font> 读了前几章，感觉主要是一些面向对象的思想，感觉还是比较理解了，所以读了一半后没有读了，略有收获<br><br><br></p>
+<p><font size="4">《Spring 实战》</font> 算是一本参考书籍，比很多博客好的是，因为它是最新版本，更加推荐注解的方式进行Spring开发，在不使用Spring Boot的前提下，Spring的确是应该使用注解减少配置，章节很多，AOP介绍的很不错，比很多博客一来就一堆术语容易理解，只看了需要的部分，值得长期作为参考<br><br><br><br></p>
+<p><font size="4">《数据结构与算法：JAVA语言实现》</font> 分析了一些JAVA数据结构，书还可以，不过感觉有些地方废话比较多，有些地方又写的过于简略，希尔排序愣是没看懂，动态规划部分讲的不错，有好有坏吧，可以辅助网上的博客进行阅读<br><br><br><br></p>
+<p><font size="4">《JAVA程序员面试宝典》</font> 讲了一大堆面试题，但是感觉比较浅显， 其实按照阿里巴巴面试官的风格，一般都会问的比较深，这书不够看，JAVA基础知识还是需要长期积累，企图临时抱佛脚是不行的<br><br><br><br></p>
+<p><font size="6"><strong>数据库相关</strong></font><br><br></p>
+<p><font size="4">《高性能MySQL》</font> 这本书适合做DBA或者更学的更深的人研究，我挑了其中几个章节来看，加强对MySQL的理解，在没有优化的需求下来看这本书还是会有些无聊，还挺难的。。。。<br><br><br><br></p>
+<p><font size="6"><strong>设计模式相关</strong></font><br><br></p>
+<p><font size="4"><strong>《head first 设计模式》</strong></font> 强烈推荐的书，在看过的专业书籍里应该是最易读，印象最深刻的一本了，里面UML类图画的很清晰，排版有趣，穿插一些JAVA代码，很容易理解设计模式，对于面向对象的理解更进一步，个人认为比 《JAVA编程思想》更值得读<br><br><br><br></p>
+<p><font size="6"><strong>算法相关</strong></font><br><br></p>
+<p><font size="4">《编程珠玑》</font> 好吧，感觉很高端，看了两章感觉很难，果然是应该好好学习算法了。<br><br></p>
+<p><font size="4">《剑指offer》</font> 说多了都是泪，不刷完offer恐怕是拿不到咯</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;最近看了不少专业书籍，打算理一下&lt;/p&gt;
+&lt;h1 id=&quot;JAVA相关&quot;&gt;&lt;a href=&quot;#JAVA相关&quot; class=&quot;headerlink&quot; title=&quot;JAVA相关&quot;&gt;&lt;/a&gt;JAVA相关&lt;/h1&gt;&lt;p&gt;&lt;font size=&quot;4&quot;&gt;《JAVA编程思想》&lt;/fon
+    
+    </summary>
+    
+    
+      <category term="书单" scheme="http://chenlixiyu.me/tags/%E4%B9%A6%E5%8D%95/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>2017实习生面经</title>
+    <link href="http://chenlixiyu.me/2017/04/13/2017%E5%AE%9E%E4%B9%A0%E7%94%9F%E9%9D%A2%E7%BB%8F/"/>
+    <id>http://chenlixiyu.me/2017/04/13/2017实习生面经/</id>
+    <published>2017-04-13T08:23:18.000Z</published>
+    <updated>2017-04-30T08:04:56.248Z</updated>
+    
+    <content type="html"><![CDATA[<p>从开始找实习到现在几个月时间了，准备下面试过程</p>
+<h1 id="腾讯"><a href="#腾讯" class="headerlink" title="腾讯"></a>腾讯</h1><h2 id="一面"><a href="#一面" class="headerlink" title="一面"></a>一面</h2><p>4月11号接到短信说4月13号早上9点在市区面试，一大早起来打车过去，到面试地点还有40分钟，肚子太饿签完到先去便利店买个面包，大概9点10分接到面试短信</p>
+<p>面试官看起来非常nice，递过简历后给我一张纸，上面写了几个题，20分钟完成。</p>
+<ul>
+<li>1 写出进程通信的方式，各种的特点及应用场景</li>
+<li>2 字节对齐</li>
+<li>3 快速排序</li>
+<li>4 数据库三范式并举例</li>
+</ul>
+<p>接下来面试官看我的答案，因为操作系统还没学完，所以第一题只答出5种方式，未答出消息队列，面试官问我哪个最快，答信号量，面试官笑着告诉我是共享内存。</p>
+<p>我快排写的是一层循环的，面试官第一眼感觉不对，多番解释后认可，过程面试官很有耐心。</p>
+<p>接着问项目，问了一些项目的实现，虽然面试官不是JAVA方向的，但是明显经验丰富，提出了一些优化问题，我答得不太好，感觉还是理论懂得多，但是没有实践过，一下子想不起来，仔细回想那些点也应该知道。</p>
+<p>最后问了一个TCP，UDP的区别，感觉所有面试都问过，这次追问了下拥塞窗口代表的含义，我答缓存大小，面试官说ACK数目。<br>后面查了下资料，应该是 <strong>“以字节为单位，但是慢启动以报文段大小为单位进行增加”</strong>，拥塞窗口是发送方的，滑动窗口是接收方的，以二者最小值作为发送报文段数目的最小值</p>
+<p>至此一面结束，还在等待消息，感觉还是优化经验不足，很感谢TX面试官给我的指导，可惜是JAVA方向，未来不太可能进TX，感觉还是挺喜欢TX，后悔没做C++后台了。。。</p>
+<p>查微信公众号发现被挂了。。。果然TX是不好进的。。。</p>
+<h1 id="京东成都研究院"><a href="#京东成都研究院" class="headerlink" title="京东成都研究院"></a>京东成都研究院</h1><h2 id="简历筛选面"><a href="#简历筛选面" class="headerlink" title="简历筛选面"></a>简历筛选面</h2><p>正打算自己写一个IOC容器玩玩，突然就接到京东成都研究院的电话面试。。。</p>
+<p>先是自我介绍，大概说了下，漏了说我是哪个学校的，以往面试面试官都知道学校的，所以忘了说，尴尬</p>
+<p>如实说明没有参与过高并发的系统，面试官表示在校生很正常</p>
+<p>大概按照我的简历问了下：</p>
+<p>建表SQL语句怎么写。。。。。。。。</p>
+<p>左右连接的区别，怎么优化 我答索引 好像不对？不太清楚外连接是不是全表搜索不管索引，查了下百度也没有很明确的答案，看来应该找本sql优化的书看看了</p>
+<p>平时用java7还是8，我说用8，但是新特性好像不怎么用（其实感觉想问我8的特性，然后我这么一说不问了，其实问了也会的，有点傻了）</p>
+<p>熟悉集合类吗，说了一连串集合类，然后问我hashmap和hashtable的区别，还以为会问hashmap原理，结果问怎么获取线程安全的hashmap。。</p>
+<p>Spring怎么产生对象 刚好在写IOC容器，就扯了一下，最后提到scope默认单例。。问有哪几种作用域，这还真不记得了（自己挖坑）</p>
+<p>你说熟悉设计模式，讲讲用过哪些 我说平时自己也不写，框架都带了，就扯了下Spring MVC的适配器模式，然后有点紧张，本来应该围绕java框架用到的设计模讲的，就扯了些命令模式什么的。。。面试官听不下去了，问我IO是什么模式，装饰者模式</p>
+<p>然后就没了，让等消息，总共十分钟，感觉面试官挺急的</p>
+<p>后面和同学交流了，他面了25分钟，问的比较深入，GC,JVM,hashmap，concurrentHashmap，分段锁</p>
+<p>怎么感觉自己面了个假面试。。。。</p>
+<h2 id="一面-1"><a href="#一面-1" class="headerlink" title="一面"></a>一面</h2><p>这一次是到办公的地点面的，因为比较远，提前4个小时出发，到了西部智谷，保安大哥居然让下去坐半个小时再上去。。。。</p>
+<p>面试的人比较多，大概9JAVA，2算法，2安卓，（JAVA有毒）</p>
+<p>我的面试官面完前面的人来给我面，感觉他们本来应该午休的，结果被拉来面试了，所以比较困，我比较理解之前电话面为什么面试官比较急了。。。。</p>
+<p>先是问项目，我项目经历比较杂，JAVA上线的项目只有一个Netty写的，自己写的管理系统什么的因为没上线就没往简历上写，所以面试官一般都问这个项目。。</p>
+<p>Netty的IO模型</p>
+<p>BIO NIO AIO的区别</p>
+<p>线程池</p>
+<p>线程池里可以放多少任务，任务存在哪</p>
+<p>三目运算</p>
+<p>hashmap内部实现</p>
+<p>怎么启动一个线程</p>
+<p>继承runnable接口和Thread类的区别</p>
+<p>桶排序（其实我一直不太分得清基数排序和桶排序，只是知道两个原理，名字老忘，果然说反了，面试官引导我回答出来了）</p>
+<p>Spring的特点，我强调了下自己写的IoC容器和AOP，所以让我说了我自己写的和框架的有什么不同，AOP怎么实现的（面试官在简历上写了个AOP，可能是我这里没说清楚？大概不是让我说怎么实现的，是想说切点切面通知的定义？）</p>
+<p>代理模式和装饰者模式的区别</p>
+<p>代数定理（京东这套路很强）</p>
+<p>你才大三怎么会这么多语言，是怎么学习的（估计嫌弃我学的太杂了）</p>
+<p>Mybatis的mapper.xml里面#和$引用的区别，这个没答出来，有点紧张想不起来了</p>
+<p>最近看了什么分布式书籍，说说体会，扯了一堆架构的东西以及hash算法，还没说消息队列和注册中心，RPC等中间件，估计觉得我也不知道什么，就让我提问题了</p>
+<p>感觉很多问题答得不太好，语速有点快，不过面试官还是很有耐心地引导我回答出来了</p>
+<p>成都研究院大概是唯一一个在成都实习的机会了，一周内出结果，听到这句话很方。。。</p>
+<hr>
+<p>成都研究院应该是挂了 一个同学电话面5分钟，随便问了几个问题拿到了offer 我们另外4个人一面电话面，二面现场面，一个人都没拿到 就这样吧 败在运气</p>
+<h1 id="知乎成都"><a href="#知乎成都" class="headerlink" title="知乎成都"></a>知乎成都</h1><h1 id="一面-2"><a href="#一面-2" class="headerlink" title="一面"></a>一面</h1><p>在学校BBS上偶然看到一个学长发的帖子 成都居然有知乎 然后投了一下简历 第二天hr打电话约了面试</p>
+<p>知乎还是挺远的 离学校30公里 刚好赶上五一放假 堵车+人多 站了3小时才到</p>
+<p>一到知乎hr就带我去找面试官了（我还提前打印了一份简历，没想到面试官居然打印好了，作为创业型公司，知乎气氛明显轻松一些）</p>
+<p>首先是自我介绍，然后因为我主要是使用JAVA的，整个面试过程谈JAVA谈的也比较多（面其他python的公司都不问我java）</p>
+<p>面试官虽然不是做java的，但是还是以一种开放的心态来和我聊，我说看过java一些源码，就让我讲讲看过的源码，我挑了可重入锁讲，可重入的意思，公平，非公平，如何实现的可重入</p>
+<p>如果用一个队列实现优先级的锁，怎么做，这个就是优先队列，一个二叉堆</p>
+<p>10亿个IP地址，求出现次数最大的10个，我想的是分批进行堆排，不过面试官提出不能保证正确性 给我提示对IP地址求哈希 哈希值一样的存在同一个文件里 比较文件大小就可以</p>
+<p>接着是一个LRU算法，链表加hashMap</p>
+<p>讲讲netty为什么高性能 我一直关注的是netty的编写效率 其实高性能的原因还真一下子想不起来说啥 扯了下它修复了大部分NIO的bug  突然想起来可以说线程模型 于是说了线程模型 handler，handlerAdapter，pipeline的源码什么的</p>
+<p>阻塞和非阻塞（异步非异步，阻塞非阻塞感觉就是理解了之后过一段时间又感觉似懂非懂）</p>
+<p>epoll为什么比poll，selecter好，epoll的两种触发方式，应用场景</p>
+<p>为什么线程通信时共享内存比其他方式快（面试官看了我博客。。）</p>
+<p>java和python的区别（这个问题被问到过好几次  每次都说python不如java严谨，这次面试前特意复习了下python，有些新感受，其实python作为动态语言的确不需要那么严谨还有设计模式 而且大部分时候架构也比语言更重要 细节上的比如AOP在JAVA里是代理模式或者字节码加强，python是装饰者模式，闭包啊，函数式编程）</p>
+<p>java的垃圾回收算法(java垃圾回收和python很类似，所以对比二者说了些)</p>
+<p>Mysql的索引底层结构</p>
+<hr>
+<p>后面就是聊一些别的东西（面试中途接了个电话，以为是推销的，打算接起来挂了，结果是京东打来的，很尴尬，面试官后面提到这一点不礼貌，还是很感谢面试官没有让我回家等消息）</p>
+<p>面试官给了我很多建议和指导，感觉知乎的面试官非常亲和，完全是一种聊天的心态来交流，其他面试官如果不是做java的，就不问java</p>
+<p>非常感谢面试官和推我的学长给我机会</p>
+<p>回到学校后收到hr电话约了二面，五一后看二面情况吧</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;从开始找实习到现在几个月时间了，准备下面试过程&lt;/p&gt;
+&lt;h1 id=&quot;腾讯&quot;&gt;&lt;a href=&quot;#腾讯&quot; class=&quot;headerlink&quot; title=&quot;腾讯&quot;&gt;&lt;/a&gt;腾讯&lt;/h1&gt;&lt;h2 id=&quot;一面&quot;&gt;&lt;a href=&quot;#一面&quot; class=&quot;headerlin
+    
+    </summary>
+    
+    
+      <category term="面经" scheme="http://chenlixiyu.me/tags/%E9%9D%A2%E7%BB%8F/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>数据结构（2）JAVA中的HashMap</title>
+    <link href="http://chenlixiyu.me/2017/03/15/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%EF%BC%882%EF%BC%89JAVA%E4%B8%AD%E7%9A%84HashMap/"/>
+    <id>http://chenlixiyu.me/2017/03/15/数据结构（2）JAVA中的HashMap/</id>
+    <published>2017-03-15T08:27:42.000Z</published>
+    <updated>2017-03-15T09:29:53.117Z</updated>
+    
+    <content type="html"><![CDATA[<p>HashMap是Java中常用的数据结构，它们在Java8中有了很大的改变，今天通过源码来了解下。</p>
+<h3 id="Node"><a href="#Node" class="headerlink" title="Node"></a>Node</h3><p>HashMap在Java8以前是把key-value保存在静态内部类Entry中的，在Java8中，出现了一个新的类–Node来替代它，其结构如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">static class Node&lt;K,V&gt; implements Map.Entry&lt;K,V&gt; &#123;</div><div class="line">        final int hash;    //用来定位数组索引位置</div><div class="line">        final K key;</div><div class="line">        V value;</div><div class="line">        Node&lt;K,V&gt; next;   //链表的下一个node</div><div class="line"></div><div class="line">        Node(int hash, K key, V value, Node&lt;K,V&gt; next) &#123; ... &#125;</div><div class="line">        public final K getKey()&#123; ... &#125;</div><div class="line">        public final V getValue() &#123; ... &#125;</div><div class="line">        public final String toString() &#123; ... &#125;</div><div class="line">        public final int hashCode() &#123; ... &#125;</div><div class="line">        public final V setValue(V newValue) &#123; ... &#125;</div><div class="line">        public final boolean equals(Object o) &#123; ... &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="关于HashMap的大小"><a href="#关于HashMap的大小" class="headerlink" title="关于HashMap的大小"></a>关于HashMap的大小</h3><ul>
+<li>HashMap中有容量，阈值和负荷系数三个值，阈值=容量×负荷系数，默认容量为16，负荷系数为0.75，如果结点数超过阈值就会引发扩容，HashMap的容量总是2的N次幂，原因后面会说。</li>
+<li>负荷系数越大，HashMap就会越接近容量大小，每次查找时的命中率就会降低，开销增加，但是负荷系数过小会浪费一些空间，这是一个空间换取时间的问题</li>
+</ul>
+<h3 id="如何确定桶的位置"><a href="#如何确定桶的位置" class="headerlink" title="如何确定桶的位置"></a>如何确定桶的位置</h3><p>每次存入数据时，会调用Key的hashCode方法求得hashcode，接着取hashCode的高n(容量为2^n)位，和 容量-1 进行按位与操作，求出来的值就是桶的位置。这就是容量选择2^n的关键之处，如果容量不是2的^n，它的二进制值最后一位可能为0，使用它和hashCode按位与求出来的值最后一位必然是0，这就导致很多桶不能用，降低了空间利用率，增加了查找开销。</p>
+<h3 id="红黑树结构"><a href="#红黑树结构" class="headerlink" title="红黑树结构"></a>红黑树结构</h3><p>在Java8中，当某一个桶的结点数超过8时，会引发结构转换，将这个桶转换成一颗红黑树，红黑树作为一种非标准的AVL树，对其操作的时间复杂度最坏时为O(lgN)，使得HashMap的操作速度变得更快，效率也随之增加。</p>
+<h2 id="关于扩容"><a href="#关于扩容" class="headerlink" title="关于扩容"></a>关于扩容</h2><ul>
+<li>过去的HashMap扩容操作是重新计算hash值，这样会浪费很多时间，在Java8中有了很大的改进。假设原桶的位置为n，则在新数组中，我们其位置取决于新的高n位最高位是1还是0，如果是1，则其位置为n+oldCapacity，否则其位置不变。</li>
+<li>过去扩容时，如果旧表和新表桶的位置相同，是会翻转链表，如果不注意的话，两个线程同时扩容会造成无限的死循环，如今扩容不会有这种操作了。</li>
+</ul>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;HashMap是Java中常用的数据结构，它们在Java8中有了很大的改变，今天通过源码来了解下。&lt;/p&gt;
+&lt;h3 id=&quot;Node&quot;&gt;&lt;a href=&quot;#Node&quot; class=&quot;headerlink&quot; title=&quot;Node&quot;&gt;&lt;/a&gt;Node&lt;/h3&gt;&lt;p&gt;HashM
+    
+    </summary>
+    
+    
+      <category term="数据结构" scheme="http://chenlixiyu.me/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/"/>
+    
+      <category term="JAVA" scheme="http://chenlixiyu.me/tags/JAVA/"/>
+    
+      <category term="List" scheme="http://chenlixiyu.me/tags/List/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>数据结构（1）JAVA中List的实现</title>
+    <link href="http://chenlixiyu.me/2017/03/11/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%EF%BC%881%EF%BC%89JAVA%E4%B8%ADList%E7%9A%84%E5%AE%9E%E7%8E%B0/"/>
+    <id>http://chenlixiyu.me/2017/03/11/数据结构（1）JAVA中List的实现/</id>
+    <published>2017-03-11T03:56:08.000Z</published>
+    <updated>2017-03-11T13:57:45.587Z</updated>
+    
+    <content type="html"><![CDATA[<p>最近开始复习数据结构与算法，买了一本《数据结构与算法分析–JAVA语言描述》，打算熟悉JAVA中的数据结构与算法，今天介绍ArrayList和LinkedList以及它们的迭代器Iterator，由于具体的代码需要实现较多接口方法，暂时不一一实现，如果后面有空会一一实现并上传。</p>
+<h2 id="List接口、ArrayList和LinkedList"><a href="#List接口、ArrayList和LinkedList" class="headerlink" title="List接口、ArrayList和LinkedList"></a>List接口、ArrayList和LinkedList</h2><h3 id="list接口"><a href="#list接口" class="headerlink" title="list接口"></a>list接口</h3><p>list接口在java.util包中，继承自collectio接口，它包含了collectio接口中的所有方法以及一些自定义的方法。下面展示了部分方法（看书的的时候以为extends是写错了，查了一下发现接口继承接口不必实现其中方法，所以还是接口，如果用implement就错了）：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">public interface List&lt;E&gt; extends Collection&lt;E&gt;&#123;</div><div class="line">  E get(int idx);</div><div class="line">  E set(int idx, E newVal);</div><div class="line">  void add(int idx, E x);</div><div class="line">  void remove(int idx);</div><div class="line"></div><div class="line">  ListIterator&lt;E&gt; listIterator(int pos);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="Iterator"><a href="#Iterator" class="headerlink" title="Iterator"></a>Iterator</h3><p>说起集合框架自然是少不了Iterator，获得它的方式为 集合名.iterator()。简单介绍下Iterator的功能：</p>
+<ul>
+<li>1 Iterator只能够一个一个地读取容器中保存的数据，每一个时刻指向一条数据</li>
+<li>2 它有hasnext()方法，可以返回是否还有下一条数据；next()方法则向下移动</li>
+<li>3 Iterator可以使用remove()方法删除数据，如果在使用Iterator的时候使用了集合自带的remove()方法，就会使得当前Iterator不可用，使用当前Iterator时会抛出ConcurrentModificationException异常，具体实现机制是在集合类中增加ModCount变量，生成Iterator的时候将其传给Iterator的ExceptModCount变量，每次使用Iterator的next()或者remove()方法时要判断ExceptModCount和ModCount是否相同，不同则抛出异常。</li>
+</ul>
+<h3 id="ArrayList"><a href="#ArrayList" class="headerlink" title="ArrayList"></a>ArrayList</h3><p>ArrayList的实现采用的是数组，其特点主要有</p>
+<ul>
+<li>1 get（）方法花费常数时间，所以在已知下标的情况下进行查找操作是很快的</li>
+<li>2 除非在末端插入一个数据，否则会花费线性时间来插入数据（因为插入后会移动前其他数据）</li>
+<li>3 remove（）方法的开销也很大，除非删除最后一个数据，原因同上</li>
+<li>4 ArrayList的大小在一开始是固定的，只有不够的时候才会重新分配内存增大容量（当然，也可以主动增加容量，这是通过 创建新数组， 把旧数组的内容复制到新数组的来完成的），增加为原大小的2倍加1</li>
+</ul>
+<h3 id="LinkedList"><a href="#LinkedList" class="headerlink" title="LinkedList"></a>LinkedList</h3><p>LinkedList采用的是双链式存储结构，其主要特点有</p>
+<ul>
+<li>1 get()方法花费线性时间，所以查找操作的开销比较大，只有查找其头或尾的结点时才很快</li>
+<li>2 remove()方法在已知位置的情况下花费常数时间</li>
+<li>3 空的链表中有首节点和尾节点，其中不保存数据，是为了删除操作的方便</li>
+<li>4 LinkedIterator可以访问其前后的结点<br>这里只放上LinkedList结点的实现代码，它是作为静态内部类放在LinkedList中<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">private static class Node&lt;E&gt;&#123;</div><div class="line">  public Node(E d, Node&lt;E&gt; p,Node&lt;E&gt; n,)&#123;</div><div class="line">    data = d; prev = p; next = n;</div><div class="line">  &#125;</div><div class="line">  public E data;</div><div class="line">  public Node&lt;E&gt; prev;</div><div class="line">  public Node&lt;E&gt; next;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="Iterator的意义"><a href="#Iterator的意义" class="headerlink" title="Iterator的意义"></a>Iterator的意义</h3><p>最早开始学习JAVA的时候感觉迭代器这东西没有什么用，还很麻烦，降低了代码的可读性，现在大概解释下它的意义（仅仅是个人理解）。<br>考虑一个问题，假设有一个list，它里面的数据为[2,3,3,4]，我们需要写一个方法来找出其中数据为奇数的项并且删除它们，考虑两种方案</p>
+<ul>
+<li>1 遍历整个list，遇到数据为奇数则调用list的remove()方法，删除这一项，这种方案不论是对于ArrayList还是LinkedList，它们的平均时间复杂度都为O(n ^2),因为遍历时间复杂度为O(n)，删除时间复杂度为o(n)，两者为嵌套关系</li>
+<li>2 使用LinkedList，遍历使用其迭代器，遇到数据为奇数的项则使用迭代器的remove()方法，这样的平均时间复杂度为O(n)，原因是LinkedList迭代器中remove方法的时间复杂度是O(1)</li>
+</ul>
+<p>由此可见，在有些情况下，集合类配合其迭代器的使用能够大大降低算法的时间复杂度，这在数据量较大时作用会很明显</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;最近开始复习数据结构与算法，买了一本《数据结构与算法分析–JAVA语言描述》，打算熟悉JAVA中的数据结构与算法，今天介绍ArrayList和LinkedList以及它们的迭代器Iterator，由于具体的代码需要实现较多接口方法，暂时不一一实现，如果后面有空会一一实现并上
+    
+    </summary>
+    
+    
+      <category term="数据结构" scheme="http://chenlixiyu.me/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/"/>
+    
+      <category term="JAVA" scheme="http://chenlixiyu.me/tags/JAVA/"/>
+    
+      <category term="List" scheme="http://chenlixiyu.me/tags/List/"/>
+    
+  </entry>
+  
+</feed>
