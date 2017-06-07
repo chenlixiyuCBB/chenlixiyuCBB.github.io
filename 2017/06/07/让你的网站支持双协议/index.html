@@ -1,0 +1,764 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="HTTP/HTTPS,京东实习日记," />
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="chenlixiyu" type="application/atom+xml" />
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.0" />
+
+
+
+
+
+
+<meta name="description" content="为什么要让网站支持双协议性能差异相较于HTTP而言，HTTPS在TCP和HTTP之间增加了SSL协议来保证安全性，能够避免大部分的中间人攻击，但是多出一层协议，就会使得访问的开销增加，开销的增加主要有两方面：
+
+1 建立连接时，SSL握手过程需要多传输9个包，会增加带宽消耗，如果用户一开始是用HTTP协议访问，强制跳转到HTTPS的时候会重新建立TCP连接（二者不在同一个端口）
+
+
+http建立连">
+<meta property="og:type" content="article">
+<meta property="og:title" content="让你的网站支持双协议">
+<meta property="og:url" content="http://chenlixiyu.me/2017/06/07/让你的网站支持双协议/index.html">
+<meta property="og:site_name" content="chenlixiyu">
+<meta property="og:description" content="为什么要让网站支持双协议性能差异相较于HTTP而言，HTTPS在TCP和HTTP之间增加了SSL协议来保证安全性，能够避免大部分的中间人攻击，但是多出一层协议，就会使得访问的开销增加，开销的增加主要有两方面：
+
+1 建立连接时，SSL握手过程需要多传输9个包，会增加带宽消耗，如果用户一开始是用HTTP协议访问，强制跳转到HTTPS的时候会重新建立TCP连接（二者不在同一个端口）
+
+
+http建立连">
+<meta property="og:image" content="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/1.jpg">
+<meta property="og:image" content="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/2.jpg">
+<meta property="og:image" content="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/3.png">
+<meta property="og:image" content="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/4.png">
+<meta property="og:image" content="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/5.png">
+<meta property="og:image" content="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/6.png">
+<meta property="og:image" content="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/13.png">
+<meta property="og:image" content="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/14.png">
+<meta property="og:image" content="https://git.oschina.net/chenlixiyu/tuchuang/raw/master/15.png">
+<meta property="og:image" content="https://git.oschina.net/chenlixiyu/tuchuang/raw/master/16.png">
+<meta property="og:image" content="https://git.oschina.net/chenlixiyu/tuchuang/raw/master/17.png">
+<meta property="og:image" content="https://git.oschina.net/chenlixiyu/tuchuang/raw/master/18.png">
+<meta property="og:updated_time" content="2017-06-07T14:30:52.642Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="让你的网站支持双协议">
+<meta name="twitter:description" content="为什么要让网站支持双协议性能差异相较于HTTP而言，HTTPS在TCP和HTTP之间增加了SSL协议来保证安全性，能够避免大部分的中间人攻击，但是多出一层协议，就会使得访问的开销增加，开销的增加主要有两方面：
+
+1 建立连接时，SSL握手过程需要多传输9个包，会增加带宽消耗，如果用户一开始是用HTTP协议访问，强制跳转到HTTPS的时候会重新建立TCP连接（二者不在同一个端口）
+
+
+http建立连">
+<meta name="twitter:image" content="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/1.jpg">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    sidebar: {"position":"left","display":"post","offset":12,"offset_float":0,"b2t":false,"scrollpercent":false},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://chenlixiyu.me/2017/06/07/让你的网站支持双协议/"/>
+
+
+
+
+
+  <title> 让你的网站支持双协议 | chenlixiyu </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">chenlixiyu</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://chenlixiyu.me/2017/06/07/让你的网站支持双协议/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="chenlixiyu">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/timg.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="chenlixiyu">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                让你的网站支持双协议
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-06-07T21:53:28+08:00">
+                2017-06-07
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="为什么要让网站支持双协议"><a href="#为什么要让网站支持双协议" class="headerlink" title="为什么要让网站支持双协议"></a>为什么要让网站支持双协议</h1><h2 id="性能差异"><a href="#性能差异" class="headerlink" title="性能差异"></a>性能差异</h2><p>相较于HTTP而言，HTTPS在TCP和HTTP之间增加了SSL协议来保证安全性，能够避免大部分的中间人攻击，但是多出一层协议，就会使得访问的开销增加，开销的增加主要有两方面：</p>
+<ul>
+<li>1 建立连接时，SSL握手过程需要多传输9个包，会增加带宽消耗，如果用户一开始是用HTTP协议访问，强制跳转到HTTPS的时候会重新建立TCP连接（二者不在同一个端口）</li>
+</ul>
+<p><img src="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/1.jpg" alt="http建立连接的过程"></p>
+<pre><code>http建立连接的过程
+</code></pre><p><img src="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/2.jpg" alt="https建立连接的过程"></p>
+<pre><code>https建立连接的过程
+</code></pre><ul>
+<li>2 连接建立后，加密解密会增加CPU的消耗，从而增加时延，尽管服务器性能一般较好，也有专门的硬件用于SSL加解密，能够减少服务器负荷，减少时延，但是客户端的电量消耗是会明显增加的，特别是移动设备。</li>
+</ul>
+<h2 id="存在必须要用HTTP的场景"><a href="#存在必须要用HTTP的场景" class="headerlink" title="存在必须要用HTTP的场景"></a>存在必须要用HTTP的场景</h2><p>我们的网站可能会在不支持HTTPS的情况下使用（如公司内网），如果网站只支持HTTPS的话，在特定情况下会出现不好的用户体验，尽管只支持HTTPS会更安全，但是有的时候不得不使用HTTP，就使得网站支持双协议变得很必要了。</p>
+<p>综合来看，HTTP和HTTPS都有其应用场景，有的时候需要安全连接，有的时候性能又更加重要，既然二者都需要，倒不如让你的网站同时支持双协议，让使用者来决定用什么协议访问。</p>
+<h1 id="如何改造网站"><a href="#如何改造网站" class="headerlink" title="如何改造网站"></a>如何改造网站</h1><p>首先，我们知道SSL是监听443端口的，当HTTPS请求到达服务器时，要在443端口解密，然后进行请求分发，而HTTP请求则是在80端口进行分发，所以我们需要做一些配置才能够支持双协议，在这里我选择nginx来处理请求分发，配置如下：</p>
+<p><img src="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/3.png" alt=""></p>
+<p>像这样配置，nginx就会对80和443端口的请求分别进行转发，分别指定了ssl证书、ssl密钥的保存路径，服务器就能够对HTTPS请求进行加解密了。</p>
+<p>不过，京东的线上环境不是使用nginx来处理HTTPS请求的，它在客户端和服务器之间还有一个负载均衡层，由负载均衡层处理HTTPS的加解密工作，最后转发给服务器的请求就都是HTTP了。<br><img src="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/4.png" alt=""></p>
+<p>由于京东线上架构的特殊，我们要让开发环境模拟线上环境，这么配置是不够的，还需增加如下配置：<br><img src="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/5.png" alt=""></p>
+<p>这样就能模拟线上环境，使用nginx代替负载均衡来处理HTTPS的加解密，并且把请求都以HTTP的方式转发给应用程序。由于应用程序收到的都是HTTP请求，我们有的时候是需要知道请求所使用的协议的，所以需要在请求头中增加一个名为X-Proto的头，如果是HTTPS，它的值就是SSL，否则为空。</p>
+<p>在java代码中，我们就可以通过读X-Proto来判断当前request所使用的协议了。<br><img src="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/6.png" alt=""></p>
+<p>请求到达应用程序后，经过相应的处理，会有不同的操作，可能是返回一个页面，可能是返回json，也有可能是重定向。如果是返回页面和重定向，我们就要考虑双协议的适配问题。在一个页面中，有大量的资源需要加载，我们需要让它们根据当前请求所使用的协议来加载，不能存在HTTP请求返回的页面使用HTTPS加载资源，或是HTTPS请求返回的页面使用HTTP加载资源的情况，这样的话，我们的改造就是不成功的。重定向也是一样的，我们要根据情况来选择跳转使用的协议。具体怎么改变，在后面的部分会有详细讲解。</p>
+<h1 id="改造开始"><a href="#改造开始" class="headerlink" title="改造开始"></a>改造开始</h1><h2 id="一些必要的概念"><a href="#一些必要的概念" class="headerlink" title="一些必要的概念"></a>一些必要的概念</h2><p>改造网站的过程涉及到一些重要概念：相对协议、相对路径、绝对路径。</p>
+<p>相对协议是以“//”开头的完整路径，不必指明协议，浏览器会根据请求的refer来判断协议，相对协议可以用于访问外部资源，当然我们也可以不用相对协议，直接指明要用什么协议来访问。<br>相对路径是以“/”开头的不完整路径，不包含协议、域名，浏览器会根据请求的refer来判断协议和域名，主要用于访问内部资源和内部跳转，和相对协议一样，我们也可以使用完整的协议+域名+路径来访问内部资源。<br>绝对路径是包含协议+域名+路径的一个完整的URL，常用于重定向操作。</p>
+<h2 id="修改策略"><a href="#修改策略" class="headerlink" title="修改策略"></a>修改策略</h2><p>我们首先要对各种资源分个类：</p>
+<p>一、    外部资源<br>使用相对协议，’//’+域名+资源路径</p>
+<p>二、    内部资源<br>使用相对路径，‘/‘+资源路径</p>
+<p>三、    重定向<br>使用绝对路径，完整的协议+域名+路径，在这里我们通过读X-Proto头来获取协议</p>
+<p>四、    Ajax</p>
+<ol>
+<li><p>访问内部服务<br>使用相对路径，’/‘+资源路径</p>
+</li>
+<li><p>访问外部服务<br>使用相对协议， ’//’+域名+资源路径</p>
+</li>
+</ol>
+<p>五、    页面跳转</p>
+<ol>
+<li><p>访问内部资源</p>
+<p> 1.1&lt; a&gt;标签，使用相对路径，‘/‘+资源路径</p>
+<p> 1.2 windows.location.href，使用相对路径，以‘/‘开头+资源路径</p>
+</li>
+<li><p>访问内部资源</p>
+<p>使用相对协议，’//’+域名+资源路径</p>
+</li>
+</ol>
+<p>接下来就是按照规则对代码进行修改了。</p>
+<p>在修改代码时，我发现原有代码中大量使用了一个JdUrl类的对象，它的功能是保存协议、域名等信息，并生成URL。在这里使用它是因为开发、测试、线上、预发的域名可能都不同，我们需要根据配置文件来决定用哪个域名加载资源。通过在xml文件中注入相应的成员变量，并作为map中的value传入velocity引擎中，生成资源URL。但是JdUrl类必须指定protocal，这与我需要相对协议的需求不符。如果不使用这个类的话，就要修改很多现有代码，还可能会出现一些遗漏，导致工作量大增，因此我定义了一个类，和JdUrl功能类似，但是不强制要求protocal，并且可以返回带相对协议的URL，用于兼容原有代码。</p>
+<p>最后就可以尽情测试了，分别用HTTP和HTTPS访问网页，每个页面功能都正常，就大功告成啦！</p>
+<h1 id="知识扩展"><a href="#知识扩展" class="headerlink" title="知识扩展"></a>知识扩展</h1><p>在改造网站的整个过程中，最让人困惑的就是对于重定向的处理，在完成整个改造后，我又仔细地研究了Spring MVC中的重定向，发现spring MVC中重定向并不是总需要绝对路径的。首先来看一个代码片段：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div></pre></td><td class="code"><pre><div class="line">protected void renderMergedOutputModel(  </div><div class="line">    Map&lt;String, Object&gt; model, HttpServletRequest request, HttpServletResponse response)  </div><div class="line">    throws IOException &#123;  </div><div class="line"></div><div class="line">  // Prepare target URL.  </div><div class="line">  StringBuilder targetUrl = new StringBuilder();  </div><div class="line">  if (this.contextRelative &amp;&amp; getUrl().startsWith(&quot;/&quot;)) &#123;  </div><div class="line">    // Do not apply context path to relative URLs.  </div><div class="line">    targetUrl.append(request.getContextPath());  </div><div class="line">  &#125;  </div><div class="line">  targetUrl.append(getUrl());  </div><div class="line"></div><div class="line">  // ...  </div><div class="line"></div><div class="line">  sendRedirect(request, response, targetUrl.toString(), this.http10Compatible);  </div><div class="line">&#125;  </div><div class="line"></div><div class="line">protected void sendRedirect(  </div><div class="line">    HttpServletRequest request, HttpServletResponse response, String targetUrl, boolean http10Compatible)  </div><div class="line">    throws IOException &#123;  </div><div class="line"></div><div class="line">  if (http10Compatible) &#123;  </div><div class="line">    // Always send status code 302.  </div><div class="line">    response.sendRedirect(response.encodeRedirectURL(targetUrl));  </div><div class="line">  &#125;  </div><div class="line">  else &#123;  </div><div class="line">    HttpStatus statusCode = getHttp11StatusCode(request, response, targetUrl);  </div><div class="line">    response.setStatus(statusCode.value());  </div><div class="line">    response.setHeader(&quot;Location&quot;, response.encodeRedirectURL(targetUrl));  </div><div class="line">  &#125;  </div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>这是Spring MVC中对重定向的处理代码，当且仅当contextRelative为true且重定向资源以“/”开头时，Spring MVC会自动为资源路径增加ContextPath，并且contextRelative默认为true，这就意味着，重定向资源以“/”开头时，对于Spring MVC来说，相当于以应用根目录为开头，我们在重定向到同一应用中的资源时，可以不使用绝对路径，使用相对路径也是完全可以的，当重定向到不同应用或不同服务器上的资源时，才需要使用绝对路径。<br>了解原理后，就做一个简单的测试，这里有两个contoller</p>
+<p><img src="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/13.png" alt=""></p>
+<p><img src="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/14.png" alt=""></p>
+<p>然后访问</p>
+<p>果然重定向到了同一应用中的另一资源</p>
+<p><img src="https://git.oschina.net/chenlixiyu/tuchuang/raw/master/15.png" alt=""></p>
+<p><img src="https://git.oschina.net/chenlixiyu/tuchuang/raw/master/16.png" alt=""></p>
+<p>如果代码改成这样</p>
+<p><img src="https://git.oschina.net/chenlixiyu/tuchuang/raw/master/17.png" alt=""></p>
+<p>就会跳转到如下地址：</p>
+<p><img src="https://git.oschina.net/chenlixiyu/tuchuang/raw/master/18.png" alt=""></p>
+<p>而改为绝对路径后，就成功跳转了，可见，跳转到外部资源是需要绝对路径的。所以，<br>使用 Srping MVC重定向操作时，大多数情况下访问同一应用的资源以”/”开头即可，不同应用或是服务器下的资源，必须要有绝对路径（当然，对于京东线上架构来说，我们是必须使用绝对路径的，因为服务器接收到的总是HTTP请求，HTTPS请求发生重定向时，总会重定向到HTTP请求）。</p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/HTTP-HTTPS/" rel="tag"># HTTP/HTTPS</a>
+          
+            <a href="/tags/京东实习日记/" rel="tag"># 京东实习日记</a>
+          
+        </div>
+      
+
+      
+        
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/04/16/一些简单实用的MySQL纠错技巧/" rel="next" title="一些简单实用的MySQL纠错技巧">
+                <i class="fa fa-chevron-left"></i> 一些简单实用的MySQL纠错技巧
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+          
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/timg.jpeg"
+               alt="chenlixiyu" />
+          <p class="site-author-name" itemprop="name">chenlixiyu</p>
+           
+              <p class="site-description motion-element" itemprop="description">clxy的个人博客，邮箱chenlixiyu@icloud.com</p>
+          
+        </div>
+        <nav class="site-state motion-element">
+
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">7</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-tags">
+              <a href="/tags/index.html">
+                <span class="site-state-item-count">13</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+          <div class="feed-link motion-element">
+            <a href="/atom.xml" rel="alternate">
+              <i class="fa fa-rss"></i>
+              RSS
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#为什么要让网站支持双协议"><span class="nav-number">1.</span> <span class="nav-text">为什么要让网站支持双协议</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#性能差异"><span class="nav-number">1.1.</span> <span class="nav-text">性能差异</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#存在必须要用HTTP的场景"><span class="nav-number">1.2.</span> <span class="nav-text">存在必须要用HTTP的场景</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#如何改造网站"><span class="nav-number">2.</span> <span class="nav-text">如何改造网站</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#改造开始"><span class="nav-number">3.</span> <span class="nav-text">改造开始</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#一些必要的概念"><span class="nav-number">3.1.</span> <span class="nav-text">一些必要的概念</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#修改策略"><span class="nav-number">3.2.</span> <span class="nav-text">修改策略</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#知识扩展"><span class="nav-number">4.</span> <span class="nav-text">知识扩展</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2017</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">chenlixiyu</span>
+</div>
+
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Pisces
+  </a>
+</div>
+
+
+        
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+    
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.0"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.0"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.0"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.0"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.0"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.0"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.0"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+
+  
+
+</body>
+</html>

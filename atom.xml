@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://chenlixiyu.me/"/>
-  <updated>2017-04-16T11:38:47.725Z</updated>
+  <updated>2017-06-07T14:30:52.642Z</updated>
   <id>http://chenlixiyu.me/</id>
   
   <author>
@@ -14,6 +14,89 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>让你的网站支持双协议</title>
+    <link href="http://chenlixiyu.me/2017/06/07/%E8%AE%A9%E4%BD%A0%E7%9A%84%E7%BD%91%E7%AB%99%E6%94%AF%E6%8C%81%E5%8F%8C%E5%8D%8F%E8%AE%AE/"/>
+    <id>http://chenlixiyu.me/2017/06/07/让你的网站支持双协议/</id>
+    <published>2017-06-07T13:53:28.000Z</published>
+    <updated>2017-06-07T14:30:52.642Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="为什么要让网站支持双协议"><a href="#为什么要让网站支持双协议" class="headerlink" title="为什么要让网站支持双协议"></a>为什么要让网站支持双协议</h1><h2 id="性能差异"><a href="#性能差异" class="headerlink" title="性能差异"></a>性能差异</h2><p>相较于HTTP而言，HTTPS在TCP和HTTP之间增加了SSL协议来保证安全性，能够避免大部分的中间人攻击，但是多出一层协议，就会使得访问的开销增加，开销的增加主要有两方面：</p>
+<ul>
+<li>1 建立连接时，SSL握手过程需要多传输9个包，会增加带宽消耗，如果用户一开始是用HTTP协议访问，强制跳转到HTTPS的时候会重新建立TCP连接（二者不在同一个端口）</li>
+</ul>
+<p><img src="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/1.jpg" alt="http建立连接的过程"></p>
+<pre><code>http建立连接的过程
+</code></pre><p><img src="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/2.jpg" alt="https建立连接的过程"></p>
+<pre><code>https建立连接的过程
+</code></pre><ul>
+<li>2 连接建立后，加密解密会增加CPU的消耗，从而增加时延，尽管服务器性能一般较好，也有专门的硬件用于SSL加解密，能够减少服务器负荷，减少时延，但是客户端的电量消耗是会明显增加的，特别是移动设备。</li>
+</ul>
+<h2 id="存在必须要用HTTP的场景"><a href="#存在必须要用HTTP的场景" class="headerlink" title="存在必须要用HTTP的场景"></a>存在必须要用HTTP的场景</h2><p>我们的网站可能会在不支持HTTPS的情况下使用（如公司内网），如果网站只支持HTTPS的话，在特定情况下会出现不好的用户体验，尽管只支持HTTPS会更安全，但是有的时候不得不使用HTTP，就使得网站支持双协议变得很必要了。</p>
+<p>综合来看，HTTP和HTTPS都有其应用场景，有的时候需要安全连接，有的时候性能又更加重要，既然二者都需要，倒不如让你的网站同时支持双协议，让使用者来决定用什么协议访问。</p>
+<h1 id="如何改造网站"><a href="#如何改造网站" class="headerlink" title="如何改造网站"></a>如何改造网站</h1><p>首先，我们知道SSL是监听443端口的，当HTTPS请求到达服务器时，要在443端口解密，然后进行请求分发，而HTTP请求则是在80端口进行分发，所以我们需要做一些配置才能够支持双协议，在这里我选择nginx来处理请求分发，配置如下：</p>
+<p><img src="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/3.png" alt=""></p>
+<p>像这样配置，nginx就会对80和443端口的请求分别进行转发，分别指定了ssl证书、ssl密钥的保存路径，服务器就能够对HTTPS请求进行加解密了。</p>
+<p>不过，京东的线上环境不是使用nginx来处理HTTPS请求的，它在客户端和服务器之间还有一个负载均衡层，由负载均衡层处理HTTPS的加解密工作，最后转发给服务器的请求就都是HTTP了。<br><img src="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/4.png" alt=""></p>
+<p>由于京东线上架构的特殊，我们要让开发环境模拟线上环境，这么配置是不够的，还需增加如下配置：<br><img src="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/5.png" alt=""></p>
+<p>这样就能模拟线上环境，使用nginx代替负载均衡来处理HTTPS的加解密，并且把请求都以HTTP的方式转发给应用程序。由于应用程序收到的都是HTTP请求，我们有的时候是需要知道请求所使用的协议的，所以需要在请求头中增加一个名为X-Proto的头，如果是HTTPS，它的值就是SSL，否则为空。</p>
+<p>在java代码中，我们就可以通过读X-Proto来判断当前request所使用的协议了。<br><img src="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/6.png" alt=""></p>
+<p>请求到达应用程序后，经过相应的处理，会有不同的操作，可能是返回一个页面，可能是返回json，也有可能是重定向。如果是返回页面和重定向，我们就要考虑双协议的适配问题。在一个页面中，有大量的资源需要加载，我们需要让它们根据当前请求所使用的协议来加载，不能存在HTTP请求返回的页面使用HTTPS加载资源，或是HTTPS请求返回的页面使用HTTP加载资源的情况，这样的话，我们的改造就是不成功的。重定向也是一样的，我们要根据情况来选择跳转使用的协议。具体怎么改变，在后面的部分会有详细讲解。</p>
+<h1 id="改造开始"><a href="#改造开始" class="headerlink" title="改造开始"></a>改造开始</h1><h2 id="一些必要的概念"><a href="#一些必要的概念" class="headerlink" title="一些必要的概念"></a>一些必要的概念</h2><p>改造网站的过程涉及到一些重要概念：相对协议、相对路径、绝对路径。</p>
+<p>相对协议是以“//”开头的完整路径，不必指明协议，浏览器会根据请求的refer来判断协议，相对协议可以用于访问外部资源，当然我们也可以不用相对协议，直接指明要用什么协议来访问。<br>相对路径是以“/”开头的不完整路径，不包含协议、域名，浏览器会根据请求的refer来判断协议和域名，主要用于访问内部资源和内部跳转，和相对协议一样，我们也可以使用完整的协议+域名+路径来访问内部资源。<br>绝对路径是包含协议+域名+路径的一个完整的URL，常用于重定向操作。</p>
+<h2 id="修改策略"><a href="#修改策略" class="headerlink" title="修改策略"></a>修改策略</h2><p>我们首先要对各种资源分个类：</p>
+<p>一、    外部资源<br>使用相对协议，’//’+域名+资源路径</p>
+<p>二、    内部资源<br>使用相对路径，‘/‘+资源路径</p>
+<p>三、    重定向<br>使用绝对路径，完整的协议+域名+路径，在这里我们通过读X-Proto头来获取协议</p>
+<p>四、    Ajax</p>
+<ol>
+<li><p>访问内部服务<br>使用相对路径，’/‘+资源路径</p>
+</li>
+<li><p>访问外部服务<br>使用相对协议， ’//’+域名+资源路径</p>
+</li>
+</ol>
+<p>五、    页面跳转</p>
+<ol>
+<li><p>访问内部资源</p>
+<p> 1.1&lt; a&gt;标签，使用相对路径，‘/‘+资源路径</p>
+<p> 1.2 windows.location.href，使用相对路径，以‘/‘开头+资源路径</p>
+</li>
+<li><p>访问内部资源</p>
+<p>使用相对协议，’//’+域名+资源路径</p>
+</li>
+</ol>
+<p>接下来就是按照规则对代码进行修改了。</p>
+<p>在修改代码时，我发现原有代码中大量使用了一个JdUrl类的对象，它的功能是保存协议、域名等信息，并生成URL。在这里使用它是因为开发、测试、线上、预发的域名可能都不同，我们需要根据配置文件来决定用哪个域名加载资源。通过在xml文件中注入相应的成员变量，并作为map中的value传入velocity引擎中，生成资源URL。但是JdUrl类必须指定protocal，这与我需要相对协议的需求不符。如果不使用这个类的话，就要修改很多现有代码，还可能会出现一些遗漏，导致工作量大增，因此我定义了一个类，和JdUrl功能类似，但是不强制要求protocal，并且可以返回带相对协议的URL，用于兼容原有代码。</p>
+<p>最后就可以尽情测试了，分别用HTTP和HTTPS访问网页，每个页面功能都正常，就大功告成啦！</p>
+<h1 id="知识扩展"><a href="#知识扩展" class="headerlink" title="知识扩展"></a>知识扩展</h1><p>在改造网站的整个过程中，最让人困惑的就是对于重定向的处理，在完成整个改造后，我又仔细地研究了Spring MVC中的重定向，发现spring MVC中重定向并不是总需要绝对路径的。首先来看一个代码片段：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div></pre></td><td class="code"><pre><div class="line">protected void renderMergedOutputModel(  </div><div class="line">    Map&lt;String, Object&gt; model, HttpServletRequest request, HttpServletResponse response)  </div><div class="line">    throws IOException &#123;  </div><div class="line"></div><div class="line">  // Prepare target URL.  </div><div class="line">  StringBuilder targetUrl = new StringBuilder();  </div><div class="line">  if (this.contextRelative &amp;&amp; getUrl().startsWith(&quot;/&quot;)) &#123;  </div><div class="line">    // Do not apply context path to relative URLs.  </div><div class="line">    targetUrl.append(request.getContextPath());  </div><div class="line">  &#125;  </div><div class="line">  targetUrl.append(getUrl());  </div><div class="line"></div><div class="line">  // ...  </div><div class="line"></div><div class="line">  sendRedirect(request, response, targetUrl.toString(), this.http10Compatible);  </div><div class="line">&#125;  </div><div class="line"></div><div class="line">protected void sendRedirect(  </div><div class="line">    HttpServletRequest request, HttpServletResponse response, String targetUrl, boolean http10Compatible)  </div><div class="line">    throws IOException &#123;  </div><div class="line"></div><div class="line">  if (http10Compatible) &#123;  </div><div class="line">    // Always send status code 302.  </div><div class="line">    response.sendRedirect(response.encodeRedirectURL(targetUrl));  </div><div class="line">  &#125;  </div><div class="line">  else &#123;  </div><div class="line">    HttpStatus statusCode = getHttp11StatusCode(request, response, targetUrl);  </div><div class="line">    response.setStatus(statusCode.value());  </div><div class="line">    response.setHeader(&quot;Location&quot;, response.encodeRedirectURL(targetUrl));  </div><div class="line">  &#125;  </div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>这是Spring MVC中对重定向的处理代码，当且仅当contextRelative为true且重定向资源以“/”开头时，Spring MVC会自动为资源路径增加ContextPath，并且contextRelative默认为true，这就意味着，重定向资源以“/”开头时，对于Spring MVC来说，相当于以应用根目录为开头，我们在重定向到同一应用中的资源时，可以不使用绝对路径，使用相对路径也是完全可以的，当重定向到不同应用或不同服务器上的资源时，才需要使用绝对路径。<br>了解原理后，就做一个简单的测试，这里有两个contoller</p>
+<p><img src="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/13.png" alt=""></p>
+<p><img src="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/14.png" alt=""></p>
+<p>然后访问</p>
+<p>果然重定向到了同一应用中的另一资源</p>
+<p><img src="https://git.oschina.net/chenlixiyu/tuchuang/raw/master/15.png" alt=""></p>
+<p><img src="https://git.oschina.net/chenlixiyu/tuchuang/raw/master/16.png" alt=""></p>
+<p>如果代码改成这样</p>
+<p><img src="https://git.oschina.net/chenlixiyu/tuchuang/raw/master/17.png" alt=""></p>
+<p>就会跳转到如下地址：</p>
+<p><img src="https://git.oschina.net/chenlixiyu/tuchuang/raw/master/18.png" alt=""></p>
+<p>而改为绝对路径后，就成功跳转了，可见，跳转到外部资源是需要绝对路径的。所以，<br>使用 Srping MVC重定向操作时，大多数情况下访问同一应用的资源以”/”开头即可，不同应用或是服务器下的资源，必须要有绝对路径（当然，对于京东线上架构来说，我们是必须使用绝对路径的，因为服务器接收到的总是HTTP请求，HTTPS请求发生重定向时，总会重定向到HTTP请求）。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;为什么要让网站支持双协议&quot;&gt;&lt;a href=&quot;#为什么要让网站支持双协议&quot; class=&quot;headerlink&quot; title=&quot;为什么要让网站支持双协议&quot;&gt;&lt;/a&gt;为什么要让网站支持双协议&lt;/h1&gt;&lt;h2 id=&quot;性能差异&quot;&gt;&lt;a href=&quot;#性能差异&quot; cla
+    
+    </summary>
+    
+    
+      <category term="HTTP/HTTPS" scheme="http://chenlixiyu.me/tags/HTTP-HTTPS/"/>
+    
+      <category term="京东实习日记" scheme="http://chenlixiyu.me/tags/%E4%BA%AC%E4%B8%9C%E5%AE%9E%E4%B9%A0%E6%97%A5%E8%AE%B0/"/>
+    
+  </entry>
   
   <entry>
     <title>一些简单实用的MySQL纠错技巧</title>
@@ -60,13 +143,13 @@
     <link href="http://chenlixiyu.me/2017/04/14/%E7%AE%80%E5%8D%95%E7%9A%84IoC%E5%8E%9F%E7%90%86%E5%8F%8A%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E5%88%86%E6%9E%90/"/>
     <id>http://chenlixiyu.me/2017/04/14/简单的IoC原理及设计模式分析/</id>
     <published>2017-04-14T11:59:12.000Z</published>
-    <updated>2017-04-16T11:08:29.550Z</updated>
+    <updated>2017-06-07T14:47:48.083Z</updated>
     
     <content type="html"><![CDATA[<p>最近进行了大量的JAVA相关知识的学习，对于JAVA知识也算是比较了解了，IoC，反射，设计模式等知识都能讲清楚，但是感觉由于平时使用框架做Web后台开发的原因，明明每天都在接触这些东西，但是又没有真正在使用它们，只是使用了Spring等框架基于它们来实现的服务，纸上得来终觉浅，不练习不行。</p>
 <p>正好IoC容器的实现大量地使用了IoC,反射，设计模式，所以打算自己写一个简单的IoC容器来练习，网上查了一下，发现github上有一个叫 <a href="https://github.com/code4craft/tiny-spring" target="_blank" rel="external"><em>tiny-spring</em></a> 的开源项目，简化了Spring的IoC容器和AOP，API名字都是仿照Spring，所以临摹了一下IoC，后续打算临摹下它的AOP。</p>
 <p>我的项目地址为 <a href="https://github.com/chenlixiyuCBB/Myioc" target="_blank" rel="external"><em>Myioc</em></a>，目前只实现了IoC容器，后续将会有更新AOP实现</p>
 <h1 id="大体结构"><a href="#大体结构" class="headerlink" title="大体结构"></a>大体结构</h1><p>项目是以使用ApplicationContext作为入口，应用上下文封装了BeanFactory、BeanDefinitionReader。BeanDefinitionReader是获取并存储bean定义的类；BeanFactory则是IoC容器，负责bean的创建和获取，二者由应用上下文持有，然后组合使用以完成控制反转。</p>
-<h1 id="具体介绍"><a href="#具体介绍" class="headerlink" title="具体介绍"></a>具体介绍</h1><h2 id="IoC容器"><a href="#IoC容器" class="headerlink" title="IoC容器"></a>IoC容器</h2><h3 id="由xml中获取bean的定义"><a href="#由xml中获取bean的定义" class="headerlink" title="由xml中获取bean的定义"></a>由xml中获取bean的定义</h3><p><img src="https://cl.ly/302q111l0919" alt="获取bean定义类图"></p>
+<h1 id="具体介绍"><a href="#具体介绍" class="headerlink" title="具体介绍"></a>具体介绍</h1><h2 id="IoC容器"><a href="#IoC容器" class="headerlink" title="IoC容器"></a>IoC容器</h2><h3 id="由xml中获取bean的定义"><a href="#由xml中获取bean的定义" class="headerlink" title="由xml中获取bean的定义"></a>由xml中获取bean的定义</h3><p><img src="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/%E8%A3%85%E9%85%8Dbean%E7%9A%84%E4%B8%BB%E8%A6%81%E7%9B%B8%E5%85%B3%E7%B1%BB.png" alt="获取bean定义类图"></p>
 <h4 id="Resource及ResourceLoader"><a href="#Resource及ResourceLoader" class="headerlink" title="Resource及ResourceLoader"></a>Resource及ResourceLoader</h4><p>Resource是一个接口，它的实现类必须实现getInputStream()方法，返回一个InputStream。<br>ResourceLoader则用于生成并返回一个Resource对象（这是面向对象设计中的单一职责原则，Resource负责加载URL，而ResourceLoder则负责生成URL）。在本项目中二者的实现类分别是XmlResource和XmlResourceLoader，用于读取classPath下的xml配置文件。</p>
 <h3 id="BeanDefinition"><a href="#BeanDefinition" class="headerlink" title="BeanDefinition"></a>BeanDefinition</h3><p>这是一个普通类，保存了Bean的定义，包括名字，类型名，Class，参数等</p>
 <h3 id="BeanDefinitionReader"><a href="#BeanDefinitionReader" class="headerlink" title="BeanDefinitionReader"></a>BeanDefinitionReader</h3><p>BeanDefinitionReader为核心的接口,AbstractBeanDefinitionReader继承自BeanDefinitionReader，定义了读取bean的定义的流程，这是设计模式中的模板模式，我们先用一个抽象类定义好一个流程，完成部分步骤，某些步骤则由客户来自行完成，这样做既能规范流程又能增加系统的可扩展性。在这里使用模板模式，后续如果想增加由注解来获取Bean的定义的功能，则只需要实现AbstractBeanDefinitionReader即可。我们目前只实现XML读取，则实现一个XmlBeanDedinitionReader。</p>
@@ -75,9 +158,9 @@
 <li>1 由ResourceLoder返回一个Resource，并通过Rsource获取Inputstream</li>
 <li>2 BeanDefinitionReader通过inputStream获取相应的bean定义并解析，保存。</li>
 </ul>
-<h3 id="装配bean"><a href="#装配bean" class="headerlink" title="装配bean"></a>装配bean</h3><p><img src="https://cl.ly/3p2N2b0z183f" alt="BeanFactory"></p>
+<h3 id="装配bean"><a href="#装配bean" class="headerlink" title="装配bean"></a>装配bean</h3><p><img src="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/%E8%A3%85%E9%85%8Dbean%E7%9A%84%E4%B8%BB%E8%A6%81%E7%9B%B8%E5%85%B3%E7%B1%BB.png" alt="BeanFactory"></p>
 <p>BeanFactory为核心接口，定义了getBean()方法，通过bean的名字来获取bean（这是一个工厂方法，是工厂模式的一种实现方法，这里bean由BeanFactory生成，并交由工厂方法bean返回，将用户和具体的bean解耦，解耦正是控制反转的目标）。和BeanDefinitionReader类似，这里也有一个AbstractBeanFactory,它定义了装载bean的流程，将生成bean的关键部分交由实现类来完成。这里我们完成了一个AutowireCapableBeanFactory来实现bean的自动装载。</p>
-<h2 id="应用上下文"><a href="#应用上下文" class="headerlink" title="应用上下文"></a>应用上下文</h2><p><img src="https://cl.ly/0g3U3V1Q2K0M" alt="应用上下文"></p>
+<h2 id="应用上下文"><a href="#应用上下文" class="headerlink" title="应用上下文"></a>应用上下文</h2><p><img src="http://git.oschina.net/chenlixiyu/tuchuang/raw/master/%E5%AE%9E%E7%8E%B0ApplicationContext%E6%8E%A5%E5%8F%A3%E7%9A%84%E7%9B%B8%E5%85%B3%E7%B1%BB.png" alt="应用上下文"></p>
 <p>现在整个IoC容器几乎大功告成了，但是获取bean的定义和bean的装载并未连接在一起，所以需要一个上下文来完成这整一个流程，于是就有了ApplicationContext接口为核心的一系列类。</p>
 <p>ApplicationContext是一个继承BeanFactory的接口，这样做的目的是实现一个静态代理，然后ApplicationContext持有一个BeanFactory，用户获取bean时是从ApplicationContext来获取，这样就将用户和BeanFactory解耦了，用户不必持有一个BeanFactory对象，即可获取Bean的实现。</p>
 <p>至于以ApplicationContext的实现类，和之前的类一样，都是使用一个抽象实现类来定义模板，然后再子类实现具体功能。这里就不再过多赘述。</p>
@@ -91,13 +174,13 @@
     </summary>
     
     
-      <category term="JAVA" scheme="http://chenlixiyu.me/tags/JAVA/"/>
-    
       <category term="Spring原理" scheme="http://chenlixiyu.me/tags/Spring%E5%8E%9F%E7%90%86/"/>
     
       <category term="设计模式" scheme="http://chenlixiyu.me/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"/>
     
       <category term="IoC" scheme="http://chenlixiyu.me/tags/IoC/"/>
+    
+      <category term="JAVA" scheme="http://chenlixiyu.me/tags/JAVA/"/>
     
       <category term="反射" scheme="http://chenlixiyu.me/tags/%E5%8F%8D%E5%B0%84/"/>
     
@@ -270,9 +353,9 @@
     </summary>
     
     
-      <category term="数据结构" scheme="http://chenlixiyu.me/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/"/>
-    
       <category term="JAVA" scheme="http://chenlixiyu.me/tags/JAVA/"/>
+    
+      <category term="数据结构" scheme="http://chenlixiyu.me/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/"/>
     
       <category term="List" scheme="http://chenlixiyu.me/tags/List/"/>
     
@@ -324,9 +407,9 @@
     </summary>
     
     
-      <category term="数据结构" scheme="http://chenlixiyu.me/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/"/>
-    
       <category term="JAVA" scheme="http://chenlixiyu.me/tags/JAVA/"/>
+    
+      <category term="数据结构" scheme="http://chenlixiyu.me/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/"/>
     
       <category term="List" scheme="http://chenlixiyu.me/tags/List/"/>
     
